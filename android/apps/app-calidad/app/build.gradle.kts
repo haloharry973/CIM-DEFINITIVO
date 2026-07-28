@@ -59,9 +59,9 @@ dependencies {
     implementation(project(":core-network"))
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.47")
+    implementation("com.google.dagger:hilt-android:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    kapt("com.google.dagger:hilt-compiler:2.47")
+    kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     // CameraX
     val cameraVersion = "1.3.1"

@@ -3,7 +3,10 @@ plugins {
     id("com.android.library") version "8.7.3" apply false
     id("org.jetbrains.kotlin.android") version "2.0.21" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false
-    id("com.google.dagger.hilt.android") version "2.47" apply false
+    // kapt se declara aquí para que los submódulos puedan aplicarlo sin
+    // especificar versión (debe coincidir con la versión de Kotlin).
+    kotlin("kapt") version "2.0.21" apply false
+    id("com.google.dagger.hilt.android") version "2.51.1" apply false
 }
 
 // Tarea: Empaquetar firmware ESP32

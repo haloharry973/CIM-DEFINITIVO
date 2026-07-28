@@ -21,7 +21,6 @@ android {
     }
     
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     buildTypes {
@@ -42,9 +41,9 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 
     // Compose Dependencies para el DesignSystem unificado
     implementation(platform("androidx.compose:compose-bom:2024.10.01"))
@@ -66,8 +65,8 @@ dependencies {
     // 👁️ OpenCV para ArUco (Official Maven artifact)
     api("org.opencv:opencv:4.9.0")
 
-    implementation("com.google.dagger:hilt-android:2.47")
-    kapt("com.google.dagger:hilt-compiler:2.47")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
