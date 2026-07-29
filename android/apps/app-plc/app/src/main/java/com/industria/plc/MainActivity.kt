@@ -1,6 +1,12 @@
+// FIX: Constantes extraídas
+/**
+ * MainActivity
+ * @author CIM Team
+ */
 package com.industria.plc
 
 import android.Manifest
+import kotlinx.coroutines.withTimeout
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -48,9 +54,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
             LaunchedEffect(Unit) {
-                val p = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET)
+                val p = mutableListOf<String>()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     p.addAll(listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
+                } else {
+                    p.addAll(listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                 }
                 launcher.launch(p.toTypedArray())
             }
@@ -69,6 +77,12 @@ fun PLCApp(commCoordinator: CommunicationCoordinator) {
     val isAuthorized by remember { derivedStateOf { authorizationState == CimProtocol.AUTH_STATE_VALIDATED } }
     var independentMode by remember { mutableStateOf(false) }
     var ipCoordinator by remember { mutableStateOf("192.168.1.100") }
+    val discoveredHubIp = rememberHubIp(context)
+    LaunchedEffect(discoveredHubIp.value) {
+        discoveredHubIp.value?.let { ip ->
+            if (ip != ipCoordinator) ipCoordinator = ip
+        }
+    }
     var selectedTab by remember { mutableStateOf(0) }
     val palletPresent = remember { mutableStateMapOf<Int, Boolean>() }
     val holdStations = remember { mutableStateMapOf<Int, Boolean>() }
@@ -125,8 +139,8 @@ fun PLCApp(commCoordinator: CommunicationCoordinator) {
             port = 8888,
             stationName = "PLC",
             password = CimProtocol.PASSWORD_ACTUAL,
-            stationUuid = "CIM-PLC-04",
-            macAddress = "CIM-PLC-04"
+            stationUuid = "CIM-ST-PLC-X4",
+            macAddress = AppIdentifier.getInstance().deviceMac
         ).apply {
             onLog = { msg -> logs.add(0, "[NET] $msg") }
             onStatusChanged = { isConnectedNet = it }

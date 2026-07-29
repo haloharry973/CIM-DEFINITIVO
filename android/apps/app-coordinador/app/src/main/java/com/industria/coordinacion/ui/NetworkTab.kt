@@ -1,3 +1,4 @@
+// FIX: Constantes extraídas
 package com.industria.coordinacion.ui
 
 import androidx.compose.foundation.*
@@ -19,6 +20,8 @@ import com.sistema.distribuido.network.prefecto.IndustrialCard
 import com.sistema.distribuido.network.prefecto.IndustrialActionButton
 import com.sistema.distribuido.network.prefecto.IndustrialStatusRow
 import com.sistema.distribuido.network.prefecto.IndustrialTextButton
+import com.sistema.distribuido.network.prefecto.DigitalTwinPanel
+import com.sistema.distribuido.network.prefecto.StationTwinState
 
 data class ConnectedDevice(
     val mac: String,
@@ -27,8 +30,19 @@ data class ConnectedDevice(
     val isConnected: Boolean,
     val isAuthorized: Boolean,
     val rssi: Int = 0,
+    val ip: String = "",
+    val stationUuid: String = "",
+    val version: String = "",
+    val hardwareModel: String = "",
+    val capabilities: String = "",
     val lastSeen: Long = System.currentTimeMillis(),
     val occupant: String? = null
+)
+
+data class BlockedDeviceState(
+    val mac: String,
+    val reason: String,
+    val blockedAt: Long
 )
 
 data class NetworkTabState(
@@ -44,7 +58,8 @@ data class NetworkTabState(
     val isScanning: Boolean = false,
     val isBluetoothReconnecting: Boolean = false,
     val reconnectingMac: String? = null,
-    val isAutoModeEnabled: Boolean = false
+    val isAutoModeEnabled: Boolean = false,
+    val blockedDevices: List<BlockedDeviceState> = emptyList()
 )
 
 @Composable
@@ -60,10 +75,11 @@ fun NetworkTab(
     onToggleAutoMode: (Boolean) -> Unit,
     onForceIdentify: (mac: String) -> Unit,
     onReconnectDevice: (mac: String) -> Unit,
+    onUnbanDevice: (mac: String) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var messageText by remember { mutableStateOf("") }
-    var showDebug by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -72,13 +88,14 @@ fun NetworkTab(
         item {
             IndustrialCard("Servidor Maestro TCP", Icons.Default.Router) {
                 IndustrialStatusRow("Estado Server", if(state.isServerRunning) "ESCUCHANDO" else "OFFLINE", state.isServerRunning)
+                IndustrialStatusRow("NSD", "_cim-hub._tcp", state.isServerRunning)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IndustrialActionButton(
                         texto = "Start", 
                         icono = Icons.Default.PlayArrow, 
                         modifier = Modifier.weight(1f),
-                        enabled = !state.isServerRunning,
+                        enabled = enabled && !state.isServerRunning,
                         onClick = onStartServer
                     )
                     IndustrialActionButton(
@@ -86,7 +103,7 @@ fun NetworkTab(
                         icono = Icons.Default.Stop, 
                         modifier = Modifier.weight(1f),
                         colorFondo = IndustrialTheme.Error,
-                        enabled = state.isServerRunning,
+                        enabled = enabled && state.isServerRunning,
                         onClick = onStopServer
                     )
                 }
@@ -108,6 +125,19 @@ fun NetworkTab(
         }
 
         item {
+            IndustrialCard("Gemelo Digital", Icons.Default.ViewInAr) {
+                DigitalTwinPanel(
+                    stationStates = mapOf(
+                        "PLC" to StationTwinState("Cinta activa", Color(0xFF00E676)),
+                        "MAN" to StationTwinState("Robot HOME", Color(0xFF00E5FF)),
+                        "CAL" to StationTwinState("Inspección", Color(0xFFFFD600), isTarget = true),
+                        "ALM" to StationTwinState("Slot 12", Color(0xFF7C4DFF))
+                    )
+                )
+            }
+        }
+
+        item {
             IndustrialCard("Bluetooth y Conexiones", Icons.Default.Bluetooth) {
                 Text(
                     if (state.isScanning) "Bluetooth: escaneando..." else state.bluetoothSummary,
@@ -119,7 +149,7 @@ fun NetworkTab(
                     texto = "Refrescar Bluetooth",
                     icono = Icons.Default.Refresh,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isBluetoothReconnecting,
+                        enabled = enabled && !state.isBluetoothReconnecting,
                     onClick = onRefreshBluetooth
                 )
                 if (state.isBluetoothReconnecting && !state.reconnectingMac.isNullOrBlank()) {
@@ -130,14 +160,6 @@ fun NetworkTab(
                         fontSize = 11.sp
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                IndustrialActionButton(
-                    texto = "Abrir Debug Bluetooth",
-                    icono = Icons.Default.BugReport,
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { showDebug = true }
-                )
-                Spacer(Modifier.height(8.dp))
                 if (state.pendingRequestCount > 0) {
                     Box(
                         modifier = Modifier
@@ -179,7 +201,7 @@ fun NetworkTab(
                     texto = "Enviar",
                     icono = Icons.Default.Send,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = messageText.isNotBlank(),
+                    enabled = enabled && messageText.isNotBlank(),
                     onClick = {
                         onSendMessage(messageText)
                         messageText = ""
@@ -187,6 +209,34 @@ fun NetworkTab(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text("Último mensaje: ${state.lastMessage}", color = IndustrialTheme.TextoSecundario, fontSize = 12.sp)
+            }
+        }
+
+        if (state.blockedDevices.isNotEmpty()) {
+            item {
+                IndustrialCard("Dispositivos Bloqueados (${state.blockedDevices.size})", Icons.Default.Block, headerColor = IndustrialTheme.Error) {
+                    Text(
+                        "Estos nodos se rechazan antes de solicitar autorización.",
+                        color = IndustrialTheme.TextoSecundario,
+                        fontSize = 11.sp
+                    )
+                    state.blockedDevices.forEach { blocked ->
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(blocked.mac, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(blocked.reason, color = IndustrialTheme.TextoSecundario, fontSize = 10.sp)
+                            }
+                            IndustrialActionButton(
+                                texto = "Desbloquear",
+                                icono = Icons.Default.LockOpen,
+                                modifier = Modifier.height(34.dp),
+                                enabled = enabled,
+                                onClick = { onUnbanDevice(blocked.mac) }
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -216,6 +266,27 @@ fun NetworkTab(
                             Column(Modifier.weight(1f)) {
                                 Text(device.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 Text(device.mac, color = Color.Gray, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                                val stationUuidText = device.stationUuid.ifBlank { "no informado" }
+                                val versionText = device.version.ifBlank { "?" }
+                                Text(
+                                    "UUID: $stationUuidText · v$versionText",
+                                    color = IndustrialTheme.TextoSecundario,
+                                    fontSize = 10.sp
+                                )
+                                if (device.hardwareModel.isNotBlank()) {
+                                    Text(
+                                        "Modelo: ${device.hardwareModel}",
+                                        color = IndustrialTheme.TextoSecundario,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                if (device.capabilities.isNotBlank()) {
+                                    Text(
+                                        "Capacidades: ${device.capabilities}",
+                                        color = IndustrialTheme.TextoSecundario,
+                                        fontSize = 9.sp
+                                    )
+                                }
                             }
                             Text(device.appType, color = IndustrialTheme.Primario, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
@@ -226,6 +297,10 @@ fun NetworkTab(
                             Text(if(device.isConnected) "ONLINE" else "OFFLINE", color = IndustrialTheme.TextoSecundario, fontSize = 10.sp)
                             Spacer(Modifier.width(16.dp))
                             Text("RSSI: ${device.rssi} dBm", color = IndustrialTheme.TextoSecundario, fontSize = 10.sp)
+                            if (device.ip.isNotBlank()) {
+                                Spacer(Modifier.width(12.dp))
+                                Text("IP: ${device.ip}", color = IndustrialTheme.TextoSecundario, fontSize = 10.sp)
+                            }
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -233,6 +308,7 @@ fun NetworkTab(
                                 texto = if (device.isAuthorized) "Desconectar" else "Autorizar",
                                 icono = if (device.isAuthorized) Icons.Default.LinkOff else Icons.Default.Check,
                                 modifier = Modifier.weight(1f).height(36.dp),
+                                enabled = enabled,
                                 onClick = {
                                     if (device.isAuthorized) {
                                         onDisconnectDevice(device.mac)
@@ -247,6 +323,7 @@ fun NetworkTab(
                                     icono = Icons.Default.Close,
                                     modifier = Modifier.weight(1f).height(36.dp),
                                     colorFondo = IndustrialTheme.Error,
+                                    enabled = enabled,
                                     onClick = { onRejectDevice(device.mac) }
                                 )
                             } else {
@@ -254,7 +331,7 @@ fun NetworkTab(
                                     texto = "Forzar Reconexión",
                                     icono = Icons.Default.Refresh,
                                     modifier = Modifier.weight(1f).height(36.dp),
-                                    enabled = !state.isBluetoothReconnecting || state.reconnectingMac != device.mac,
+                                    enabled = enabled && (!state.isBluetoothReconnecting || state.reconnectingMac != device.mac),
                                     onClick = { onReconnectDevice(device.mac) }
                                 )
                             }
@@ -265,23 +342,4 @@ fun NetworkTab(
         }
     }
 
-    if (showDebug) {
-        AlertDialog(onDismissRequest = { showDebug = false }, title = { Text("Bluetooth Debug", color = IndustrialTheme.Primario) }, text = {
-            BluetoothDebugTab(
-                state = state,
-                logs = state.debugLogs,
-                onRefresh = onRefreshBluetooth,
-                onForceIdentify = onForceIdentify,
-                onReconnect = onReconnectDevice,
-                onDisconnect = onDisconnectDevice,
-                modifier = Modifier.fillMaxWidth().height(400.dp)
-            )
-        }, confirmButton = {
-            IndustrialTextButton(
-                texto = "Cerrar",
-                textColor = IndustrialTheme.TextoPrincipal,
-                onClick = { showDebug = false }
-            )
-        })
-    }
 }

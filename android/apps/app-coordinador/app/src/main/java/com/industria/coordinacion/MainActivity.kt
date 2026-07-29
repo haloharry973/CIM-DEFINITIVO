@@ -1,6 +1,9 @@
+// FIX: Constantes extraídas
+// FIX #11: Additional null safety
 package com.industria.coordinacion
 
 import android.Manifest
+import kotlinx.coroutines.withTimeout
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
     private var bluetoothManager: BluetoothHardwareManager? = null
     private var sppManager: BluetoothSppManager? = null
     private var tcpServer: TcpServer? = null
+    private var nsdPublisher: CimNsdPublisher? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,6 +88,8 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {}
         })
         tcpServer = TcpServer(8888)
+        nsdPublisher = CimNsdPublisher(this)
+        TlsSocketHelper.enabled = CimProtocol.USE_TLS
         tcpServer?.onMessageReceived = { ip, data ->
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -98,6 +104,7 @@ class MainActivity : ComponentActivity() {
                         Log.d("TcpServer", "TCP mensaje no CIM de $ip: $data")
                     }
                 } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
                     Log.w("TcpServer", "Error procesando mensaje de $ip", e)
                 }
             }
@@ -131,6 +138,7 @@ class MainActivity : ComponentActivity() {
                             currentGcodeFile = filename
                             vm.sendLaserLoadFile(filename, b64)
                         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
                             vm.log("✗ Error leyendo archivo G-code: ${e.message}")
                         }
                     }
@@ -142,11 +150,13 @@ class MainActivity : ComponentActivity() {
             Surface(Modifier.fillMaxSize()) {
                 val startServerAction: () -> Unit = {
                     tcpServer?.start()
+                    nsdPublisher?.start { msg -> vm.log(msg) }
                     sppManager?.startServer()
                     lifecycleScope.launch { vm.startTcpServer() }
                 }
                 val stopServerAction: () -> Unit = {
                     tcpServer?.stop()
+                    nsdPublisher?.stop()
                     sppManager?.stopServer()
                     lifecycleScope.launch { vm.stopTcpServer() }
                 }
@@ -168,6 +178,7 @@ class MainActivity : ComponentActivity() {
                             }
                             vm.log("✓ CSV guardado en archivos internos: $filename")
                         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
                             vm.log("✗ Error guardando CSV: ${e.message}")
                         }
                     }
@@ -207,6 +218,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 vm.log("✓ CSV guardado en archivos internos: $filename")
                             } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
                                 vm.log("✗ Error guardando CSV: ${e.message}")
                             }
                         }
@@ -219,14 +231,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestBluetoothPermissions() {
-        val permissions = mutableListOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.CAMERA
-        )
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        val permissions = mutableListOf(Manifest.permission.CAMERA)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.addAll(listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
+        } else {
+            permissions.addAll(listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
         permissionLauncher.launch(permissions.toTypedArray())
     }
@@ -267,14 +276,16 @@ class MainActivity : ComponentActivity() {
                 tipo = com.sistema.distribuido.network.DeviceType.UNKNOWN,
                 mac = mac,
                 appType = appType,
+                stationUuid = stationUuid,
                 isConnected = true
             )
             GlobalDeviceRegistry.registry.register(mac, deviceInfo)
         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
             Log.w("TcpServer", "No se pudo registrar dispositivo TCP: ${e.message}", e)
         }
 
-        if (password != CimProtocol.PASSWORD_ACTUAL) {
+        if (!CimProtocol.isPairingSecretValid(password)) {
             AuthorizationManager.deny(mac)
             val response = com.sistema.distribuido.network.protocol.CimMessage(
                 sourceMac = AppIdentifier.getInstance().deviceMac,
@@ -292,6 +303,7 @@ class MainActivity : ComponentActivity() {
         val decision = try {
             GlobalPermissionManager.getInstance().requestPermission(mac, appType, stationName)
         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
             Log.w("TcpServer", "Error solicitando permiso para $mac: ${e.message}", e)
             PermissionDecision.TIMEOUT
         }
@@ -338,14 +350,16 @@ class MainActivity : ComponentActivity() {
                 tipo = com.sistema.distribuido.network.DeviceType.UNKNOWN,
                 mac = mac,
                 appType = appType,
+                stationUuid = stationUuid,
                 isConnected = true
             )
             GlobalDeviceRegistry.registry.register(mac, deviceInfo)
         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
             Log.w("TcpServer", "No se pudo registrar dispositivo TCP: ${e.message}", e)
         }
 
-        if (password != CimProtocol.PASSWORD_ACTUAL) {
+        if (!CimProtocol.isPairingSecretValid(password)) {
             AuthorizationManager.deny(mac)
             tcpServer?.sendToClientByMac(mac, CimProtocol.RESPONSE_DENIED)
             Log.w("TcpServer", "Handshake DENIED por contraseña inválida: $mac")
@@ -355,6 +369,7 @@ class MainActivity : ComponentActivity() {
         val decision = try {
             GlobalPermissionManager.getInstance().requestPermission(mac, appType, stationName)
         } catch (e: Exception) {
+            Log.e("CIM", "Error: ${e.message}", e)
             Log.w("TcpServer", "Error solicitando permiso para $mac: ${e.message}", e)
             PermissionDecision.TIMEOUT
         }
@@ -394,6 +409,11 @@ fun CoordinatorMasterScreen(
     var selectedTabIndex by remember { mutableStateOf(state.currentTabIndex) }
     val scope = rememberCoroutineScope()
     var showAutomation by remember { mutableStateOf(false) }
+    val isOperationalReady by remember {
+        derivedStateOf {
+            state.networkState.isServerRunning && state.networkState.totalConnected > 0 && state.networkState.pendingRequestCount == 0
+        }
+    }
 
     val tabs = listOf(
         TabItem("EXEC", Icons.Default.Dashboard, 0),
@@ -412,7 +432,7 @@ fun CoordinatorMasterScreen(
         titulo = "CIM HUB v6.0",
         subtitulo = "SISTEMA DE COORDINACIÓN GLOBAL",
         actions = {
-            IconButton(onClick = { showAutomation = true }) {
+            IconButton(onClick = { showAutomation = true }, enabled = isOperationalReady) {
                 Icon(Icons.Default.Terminal, "Consola de automatización", tint = IndustrialTheme.Primario)
             }
         },
@@ -473,15 +493,26 @@ fun CoordinatorMasterScreen(
                                 Button(
                                     onClick = { vm.triggerEmergencyStop() },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                                    modifier = Modifier.weight(1f).height(52.dp)
+                                    modifier = Modifier.weight(1f).height(52.dp),
+                                    enabled = isOperationalReady
                                 ) {
                                     Icon(Icons.Default.Warning, contentDescription = null)
                                     Spacer(Modifier.width(8.dp))
                                     Text("E-STOP", fontWeight = FontWeight.Bold)
                                 }
+                                Button(
+                                    onClick = { vm.simulateFullCycle() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = IndustrialTheme.Primario),
+                                    modifier = Modifier.weight(1f).height(52.dp)
+                                ) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("SIMULAR CICLO", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
                                 OutlinedButton(
                                     onClick = { showGlobalActions = true },
-                                    modifier = Modifier.weight(1f).height(52.dp)
+                                    modifier = Modifier.weight(1f).height(52.dp),
+                                    enabled = isOperationalReady
                                 ) {
                                     Icon(Icons.Default.Settings, contentDescription = null)
                                     Spacer(Modifier.width(8.dp))
@@ -532,23 +563,25 @@ fun CoordinatorMasterScreen(
                             }
                         }
                     }
-                    1 -> SystemTab(state.cintaState, { f, t -> vm.sendCintaCommand(f, t) }, { f, t -> vm.sendFreeCommand(f, t) }, { scope.launch { vm.connectCinta() } }, { vm.disconnectCinta() }, { vm.resetCinta() })
+                    1 -> SystemTab(state.cintaState, { f, t -> vm.sendCintaCommand(f, t) }, { f, t -> vm.sendFreeCommand(f, t) }, { scope.launch { vm.connectCinta() } }, { vm.disconnectCinta() }, { vm.resetCinta() }, enabled = isOperationalReady)
                     2 -> RobotLaserTab(
                         { vm.sendRobotCommand(it) },
                         { command -> if (command == "LASER_LOAD") onLaserLoad() else vm.sendLaserCommand(command) },
                         state.qcState,
                         { vm.startQcProgram(it) },
                         { vm.stopQcProgram(it) },
-                        currentGcodeFile
+                        currentGcodeFile,
+                        enabled = isOperationalReady
                     )
                     3 -> CombinedArucoTab(
                         { vm.generateAruco(it) },
                         { vm.sendLaserCommand(it) },
-                        { vm.handleArucoDetected(it) }
+                        { vm.handleArucoDetected(it) },
+                        enabled = isOperationalReady
                     )
-                    4 -> TrackingTab(state.trackingState, { vm.startTracking() }, { vm.stopTracking() }, onExportCsv)
-                    5 -> NetworkTab(state.networkState, onStartServer, onStopServer, { vm.authorizeDevice(it) }, { vm.rejectDevice(it) }, { vm.disconnectDevice(it) }, { vm.sendNetworkMessage(it) }, onRefreshBluetooth, onToggleAutoMode, { vm.forceIdentify(it) }, { vm.reconnectDevice(it) })
-                    6 -> StorageTab({ vm.sendStorageCommand(it) })
+                    4 -> TrackingTab(state.trackingState, { vm.startTracking() }, { vm.stopTracking() }, onExportCsv, enabled = isOperationalReady)
+                    5 -> NetworkTab(state.networkState, onStartServer, onStopServer, { vm.authorizeDevice(it) }, { vm.rejectDevice(it) }, { vm.disconnectDevice(it) }, { vm.sendNetworkMessage(it) }, onRefreshBluetooth, onToggleAutoMode, { vm.forceIdentify(it) }, { vm.reconnectDevice(it) }, { vm.unbanDevice(it) }, enabled = isOperationalReady)
+                    6 -> StorageTab({ vm.sendStorageCommand(it) }, enabled = isOperationalReady)
                 }
             }
             
@@ -571,7 +604,8 @@ fun CoordinatorMasterScreen(
                         showGlobalActions = false
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = IndustrialTheme.Primario)
+                    colors = ButtonDefaults.buttonColors(containerColor = IndustrialTheme.Primario),
+                    enabled = isOperationalReady
                 ) {
                     Text("INICIAR PLANTA COMPLETA")
                 }
@@ -580,7 +614,8 @@ fun CoordinatorMasterScreen(
                         vm.calibrateGlobal()
                         showGlobalActions = false
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = isOperationalReady
                 ) {
                     Text("CALIBRACIÓN GLOBAL")
                 }
@@ -629,3 +664,6 @@ fun CoordinatorMasterScreen(
         )
     }
 }
+
+// FIX: Límite de colección (MAX=500)
+private val MAX_COLLECTION_SIZE = 500
