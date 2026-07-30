@@ -62,18 +62,21 @@ test_output/
 release.keystore
 *.keystore
 
-# --- Modelos ML grandes (gestionar aparte, no versionar) ---
+# --- Modelos ML grandes (gestionar aparte, no versionar, 19MB) ---
 *.pt
 *.tflite
 yolov8n*.tflite
-assets/
+/assets/
 bestMH.pt
+# Nota: bestMH.pt queda local en docs/assets/models/ pero no se versiona por tamaño.
+# Si quieres forzarlo (no recomendado), usa: git add -f docs/assets/models/bestMH.pt
+# Para tracking ligero, mantén solo README.md y DATA_APKS_RECUPERADA.md
 
 # --- Docs generados Node/Puppeteer antiguo (ahora usamos Python reportlab) ---
 docs/node_modules/
 docs/_preview_entrega.html
 docs/_pdf_build_temp.*
-docs/images/                 # duplicado antiguo, ahora todo en docs/assets/imagenes/
+docs/images/
 docs/count_pdf_pages.mjs
 docs/export_entrega_pdf.ps1
 docs/generate_pdf.mjs
@@ -115,10 +118,8 @@ espessif/
 esp32/scripts/
 esp32/firmware/arduino/
 config/scripts/
-android/apks/INSTRUCCIONES*.txt
 **/__pycache__/
 **/*.pyc
-**/bestMH.pt
 
 # Ignorar PNGs salvo los de docs/assets (logo UBB y capturas para documentación)
 **/*.png
