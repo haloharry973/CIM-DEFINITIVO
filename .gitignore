@@ -1,5 +1,6 @@
 # =============================================================================
-# Practica_2 — CIM v6.0 | Solo lo que NO debe subirse a GitHub
+# CIM DEFINITIVO v6.0 — Práctica II — UBB — Limpio 2026-07-30
+# Solo lo que NO debe subirse a GitHub
 # =============================================================================
 
 # --- Android / Gradle (regenerable) ---
@@ -16,7 +17,7 @@ captures/
 .idea/
 .fastRequest/
 
-# --- Cursor / VS Code (rutas personales; sí se publica extensions.json) ---
+# --- VS Code (solo se publica extensions.json) ---
 .vscode/*
 !.vscode/extensions.json
 
@@ -34,10 +35,11 @@ BUILD_LOG_*.txt
 build_*.log
 config/build_*.log
 
-# --- Python (TFLite test, hub simulator) ---
+# --- Python ---
 venv/
 env/
 __pycache__/
+tools/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -46,66 +48,79 @@ pip-log.txt
 pip-delete-this-directory.txt
 .venv
 
-# --- Resultados de test YOLO offline ---
+# --- Resultados YOLO offline ---
 tflite_inference_result.json
 tflite_output.json
 output_detection.json
 output_detection.jpg
 test_output/
 
-# --- PlatformIO (regenerable con pio run) ---
+# --- PlatformIO ---
 .pio/
 
-# --- Secretos de firma ---
+# --- Secretos firma ---
 release.keystore
 *.keystore
 
-# --- Dependencias npm del generador PDF (docs/npm install) ---
+# --- Modelos ML grandes (gestionar aparte, no versionar) ---
+*.pt
+*.tflite
+yolov8n*.tflite
+assets/
+bestMH.pt
+
+# --- Docs generados Node/Puppeteer antiguo (ahora usamos Python reportlab) ---
 docs/node_modules/
 docs/_preview_entrega.html
 docs/_pdf_build_temp.*
+docs/images/                 # duplicado antiguo, ahora todo en docs/assets/imagenes/
+docs/count_pdf_pages.mjs
+docs/export_entrega_pdf.ps1
+docs/generate_pdf.mjs
+docs/package-lock.json
+docs/package.json
 
-# --- Clones vendor muy pesados (opcional en local) ---
-espessif/
-
-# --- Paquete ZIP portable (regenerar: .\entrega\crear_paquete_zip.ps1) ---
+# --- Paquetes entrega antiguos ---
 CIM_V6_PAQUETE_ENTREGA.zip
 entrega/CIM_V6_PAQUETE_ENTREGA/
-
-# --- Carpetas de entrega antiguas ---
 ENTREGA_FINAL_CIM_V6/
 DOCUMENTACION_FINAL/
 CIM_V6_*.zip
+entrega/informes/
 
-# --- Sistema operativo ---
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# --- Carpeta personal para uso mañana ---
-.para-maniana/
-
-# --- Logs temporales ---
-*.log
-logcat_*.txt
-last*_logcat.txt
-
-# --- Scripts y carpetas obsoletos (mantener localmente pero no en Git) ---
-deploy_apks.ps1
-entorno_mobile/
-tools/organize_workspace.ps1
-
-# --- Archivos temporales del sistema ---
+# --- Archivos raros / temporales ---
+*.rar
 *.tmp
 *.bak
 *.swp
 *~
 
-# --- Gradle wrapper logs ---
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Personal / local ---
+.para-maniana/
+*.log
+logcat_*.txt
+last*_logcat.txt
+deploy_apks.ps1
+entorno_mobile/
+tools/organize_workspace.ps1
 gradle-app.setting
+espessif/
 
+# --- Limpieza adicional 2026-07-30 ---
+esp32/scripts/
+esp32/firmware/arduino/
+config/scripts/
+android/apks/INSTRUCCIONES*.txt
+**/__pycache__/
+**/*.pyc
+**/bestMH.pt
 
-
-# --- Modelos y artefactos locales de ML ---
-*.pt
-*.tflite
+# Ignorar PNGs salvo los de docs/assets (logo UBB y capturas para documentación)
+**/*.png
+!docs/assets/**/*.png
+!docs/assets/*.png

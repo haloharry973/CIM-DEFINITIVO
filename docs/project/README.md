@@ -1,10 +1,17 @@
-# Documentación técnica del proyecto
+# Proyecto — Documentación final limpia 2026-07-30
 
-Esta carpeta reúne el manual técnico consolidado y el PDF histórico de entrega. Para navegar la documentación vigente, comenzar en [docs/README.md](../README.md) y [docs/INDEX_REPOSITORIO.md](../INDEX_REPOSITORIO.md).
+Esta carpeta reúne **solo lo que se presenta + fuente técnica para mejorar**, sin duplicados históricos.
 
-## Contenido
+## Para presentar
+- `INFORME_PRACTICA_II_CIM_DEFINITIVO_LEONARDO_ARAYA.pdf` (5.2 MB) — Informe académico UBB Práctica II (mismo que `../../entrega/INFORME_PRACTICA_II...`)
+- `MANUAL_TUTORIAL_CIM_DEFINITIVO_LEONARDO_ARAYA.pdf` (5.9 MB) — Tutorial completo
+- Ambos generados por `GENERADOR_PRACTICA_II.py` con reportlab + logo UBB
 
-- [Manual de implementación activo](DOCUMENTACION_SISTEMA_CIM.md): arquitectura, despliegue, red y operación.
-- `ENTREGA_FINAL_LEONARDO_ARAYA.pdf`: documento histórico de referencia.
+## Para mejorar
+- `DOCUMENTACION_SISTEMA_CIM.md` — arquitectura activa, comunicación, firmware canónico
+- `GENERADOR_PRACTICA_II.py` — script reproducible que genera los 2 PDFs desde cero, con imágenes `../assets/imagenes/` y logo `../assets/ubb_logo.png`
 
-> La entrega vigente pre-hardware está en `../deliverables/`. No usar un documento histórico para afirmar el estado actual sin contrastarlo con la bitácora y los validadores.
+## Histórico eliminado
+- `ENTREGA_FINAL_LEONARDO_ARAYA.pdf` (6.2 MB) y `MANUAL_IMPLEMENTACION_CIM.pdf` antiguos movidos a `../../archive/historico-entrega/` o eliminados por obsoletos. La entrega vigente está en `../deliverables/` y `../../entrega/`.
+
+Para navegar, comenzar en `../README.md` y `../INDEX_REPOSITORIO.md`.

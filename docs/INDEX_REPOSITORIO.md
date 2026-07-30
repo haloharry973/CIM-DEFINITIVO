@@ -1,47 +1,71 @@
-# Índice del repositorio CIM
+# Índice del repositorio CIM — Limpio 2026-07-30
 
-## Código operativo
+## 🎯 Para presentar
+
+| Ubicación | Qué es | Estado |
+|---|---|---|
+| `../entrega/INFORME_PRACTICA_II_CIM_DEFINITIVO.pdf` | Informe académico UBB Práctica II (5.2 MB) | **Final** |
+| `../entrega/MANUAL_TUTORIAL_CIM_DEFINITIVO.pdf` | Manual tutorial paso a paso (5.9 MB) | **Final** |
+| `project/INFORME_PRACTICA_II_...pdf` | Mismo informe con nombre completo Leonardo Araya | Final |
+| `project/MANUAL_TUTORIAL_...pdf` | Mismo manual con nombre completo | Final |
+| `project/GENERADOR_PRACTICA_II.py` | Generador reportlab reproducible | Activo |
+| `project/DOCUMENTACION_SISTEMA_CIM.md` | Arquitectura técnica resumida | Activo |
+
+## 🛠️ Código operativo para mejorar
 
 | Ubicación | Contenido |
 |---|---|
-| `android/` | Aplicaciones Coordinador, PLC, Manufactura, Calidad, Almacén, Wear y `core-network`. |
-| `esp32/firmware/` | Firmware canónico de estaciones ESP32/Wemos. |
-| `tools/` | Simulación, validadores, inspección de visión y utilidades de operación. |
-| `config/` | Configuración Gradle centralizada. |
-| `docs/` | Documentación activa; comenzar en [`docs/README.md`](README.md). |
+| `../android/` | 5 apps + Wear + `core-network` (código para mejorar) |
+| `../esp32/firmware/` | Firmware canónico Wemos D1 R32 (4 .ino + .h) |
+| `../config/` | Gradle centralizado JDK17, compileSdk 35 |
+| `../tools/` | Validadores, simuladores, export YOLO |
+| `../.github/workflows/android-ci.yml` | CI testAllModules + buildAllApks |
 
-## Uso y validación
-
-- [Instructivo de uso completo](INSTRUCTIVO_USO_PROYECTO.md): preparación, build, instalación, simulación y paso a laboratorio.
-- [Estado de validación y cobertura](VALIDACION_Y_COBERTURA.md): alcance exacto de CI, UI y hardware.
-- [Manual de implementación (Markdown)](project/DOCUMENTACION_SISTEMA_CIM.md) · [PDF](project/MANUAL_IMPLEMENTACION_CIM.pdf).
-
-## Entrega pre-hardware
+## 📚 Documentación activa limpia
 
 | Documento | Uso |
 |---|---|
-| `deliverables/ENTREGA_PRE_HARDWARE_LEONARDO_ARAYA.md` y `.pdf` | Resumen, alcance y declaración de límites. |
-| `deliverables/PROCESO_VALIDACION_PRE_HARDWARE.md` | Secuencia controlada de puesta en marcha. |
-| `deliverables/MANUAL_OPERATIVO_LABORATORIO.md` | Reglas de operación y parada segura. |
-| `deliverables/PROTOCOLO_PRUEBAS_HARDWARE.md` | Casos HW-01 a HW-09 y evidencia requerida. |
-| `deliverables/PRE_HARDWARE_READINESS.md` | Semáforo y criterios de avance. |
-| `deliverables/BITACORA_VALIDACION.md` | Registro vivo de evidencia. |
-| `deliverables/FALENCIAS_RIESGOS_Y_PLAN.md` | Riesgos abiertos y mitigación. |
-| `deliverables/LLUVIA_IDEAS_Y_DECISIONES.md` | Decisiones de diseño y revisiones. |
-| `deliverables/EXPECTATIVA_VS_RESULTADO.md` | Brechas verificables. |
-| `deliverables/GUIA_PRESENTACION_TESIS.md` | Relato responsable para exposición. |
+| `README.md` | Centro de documentación (presentar vs mejorar) |
+| `INSTRUCTIVO_USO_PROYECTO.md` | Preparación, build, instalación, simulación, paso a laboratorio |
+| `VALIDACION_Y_COBERTURA.md` | Alcance CI, qué cubre 12/12 y qué no |
+| `deliverables/BITACORA_VALIDACION.md` | Registro vivo evidencia |
+| `deliverables/QUALITY_GATES.md` | Gate 0..6 criterios |
+| `deliverables/MANUAL_OPERATIVO_LABORATORIO.md` | Reglas operación segura |
+| `deliverables/PROTOCOLO_PRUEBAS_HARDWARE.md` | HW-01..HW-09 |
+| `deliverables/INFORME_TECNICO_DE_AVANCE.md` | Avance técnico resumido |
+| `deliverables/FALENCIAS_RIESGOS_Y_PLAN.md` | Riesgos abiertos |
+| `safety/SAFETY_ASSURANCE_ARCHITECTURE.md` | Arquitectura seguridad |
+| `vision/DATASET_CAPTURE_AND_LABELING.md` | Dataset y etiquetado |
+| `quickstart/README.md` | Guía rápida |
+| `audits/AUDITORIA_TECNICA_2026-07-28.md` | Auditoría técnica |
 
-## Comandos de control
+Todo lo anterior es **para mejorar** (no solo para presentar).
+
+## 🗃️ Histórico / no usar para presentar
+
+| Ubicación | Motivo |
+|---|---|
+| `../archive/` | Snapshots, firmware antiguo, reportes históricos. No compilar/flashear desde aquí |
+| `../archive/historico-entrega/ENTREGA_PRE_HARDWARE...` | Entrega antigua movida aquí en limpieza 2026-07-30 |
+| `../archive/legacy/`, `organized-snapshot/`, `reports/` | Material histórico |
+| `assets/` en raíz | Eliminado en limpieza, ahora todo en `docs/assets/imagenes/` |
+| `entrega/informes/5_INFORMES/` | Eliminado duplicado 2026-07-30 |
+| `docs/images/` duplicado, `docs/*.mjs`, `package-lock.json` | Eliminado antigua pipeline Node/Puppeteer |
+
+## Comandos de control (antes de cualquier mejora)
 
 ```bash
 python3 tools/validate_firmware_contract.py --quiet
-python3 tools/validate_system_100.py --quiet
+python3 tools/validate_system_100.py --quiet   # 12/12 PASS esperado
 python3 tools/prehardware_readiness.py --quiet
 python3 -m compileall -q tools
 git diff --check
 ```
 
-Los controles son estáticos/automatizados. No habilitan robot, láser, relé con carga ni operación autónoma: esas actividades requieren el protocolo de laboratorio y evidencia física.
+Para Android:
+```bash
+cd config
+./gradlew testAllModules lintAll buildAllApks validateApks writeApkChecksums
+```
 
-## Historial
-`archive/` conserva snapshots y documentos históricos; no es fuente para compilar ni flashear. `entrega/` contiene informes históricos seleccionados. Consultar siempre las rutas activas anteriores.
+> **Regla:** `archive/` no es fuente operativa. `entrega/` solo contiene 2 PDFs finales. Todo activo está en `android/`, `esp32/firmware/`, `tools/`, `config/`, `docs/` limpio.

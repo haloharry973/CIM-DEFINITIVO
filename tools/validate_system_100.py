@@ -124,7 +124,6 @@ def check_docs(root: Path) -> CheckResult:
         "docs/README.md",
         "docs/INSTRUCTIVO_USO_PROYECTO.md",
         "docs/VALIDACION_Y_COBERTURA.md",
-        "docs/project/MANUAL_IMPLEMENTACION_CIM.pdf",
         "docs/INDEX_REPOSITORIO.md",
         "CONTRIBUTING.md",
         "SECURITY.md",
@@ -133,14 +132,21 @@ def check_docs(root: Path) -> CheckResult:
         "docs/deliverables/QUALITY_GATES.md",
         "docs/deliverables/INFORME_TECNICO_DE_AVANCE.md",
         "docs/deliverables/BITACORA_VALIDACION.md",
-        "docs/deliverables/ENTREGA_PRE_HARDWARE_LEONARDO_ARAYA.pdf",
-        "docs/deliverables/ENTREGA_PRE_HARDWARE_LEONARDO_ARAYA.md",
+        "docs/deliverables/INFORME_PRACTICA_II_CIM_DEFINITIVO.pdf",
+        "docs/deliverables/MANUAL_TUTORIAL_CIM_DEFINITIVO.pdf",
         "docs/deliverables/PROTOCOLO_PRUEBAS_HARDWARE.md",
+        "docs/deliverables/MANUAL_OPERATIVO_LABORATORIO.md",
+        "docs/project/DOCUMENTACION_SISTEMA_CIM.md",
+        "docs/project/INFORME_PRACTICA_II_CIM_DEFINITIVO_LEONARDO_ARAYA.pdf",
+        "docs/project/MANUAL_TUTORIAL_CIM_DEFINITIVO_LEONARDO_ARAYA.pdf",
+        "entrega/INFORME_PRACTICA_II_CIM_DEFINITIVO.pdf",
+        "entrega/MANUAL_TUTORIAL_CIM_DEFINITIVO.pdf",
         "android/README.md",
         "esp32/firmware/README.md",
+        "esp32/README.md",
     ]
     ok, detail = exists_all(root, expected)
-    return CheckResult("Documentación activa y trazabilidad de entrega", ok, detail)
+    return CheckResult("Documentación activa y trazabilidad de entrega (limpia 2026-07-30)", ok, detail)
 
 
 def check_python_syntax(root: Path) -> CheckResult:
